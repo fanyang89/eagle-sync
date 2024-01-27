@@ -23,7 +23,7 @@ func NewLibrary(baseDir string) *Library {
 	}
 }
 
-func (e *Library) Export(outputDir string, bar *progressbar.ProgressBar) error {
+func (e *Library) Export(outputDir string, overwrite bool, bar *progressbar.ProgressBar) error {
 	var mtimeMap Mtime
 	err := parseJsonFile(filepath.Join(e.BaseDir, "mtime.json"), &mtimeMap)
 	if err != nil {
@@ -85,7 +85,7 @@ func (e *Library) Export(outputDir string, bar *progressbar.ProgressBar) error {
 				dst = filepath.Join(outputDir, category, fileName)
 			}
 
-			err = copyFile(src, dst, mtime)
+			err = copyFile(src, dst, mtime, overwrite)
 			if err != nil {
 				return err
 			}
@@ -114,7 +114,7 @@ func parseJsonFile(path string, out interface{}) error {
 	return nil
 }
 
-func copyFile(src string, dst string, fileMtime int64) error {
+func copyFile(src string, dst string, fileMtime int64, overwrite bool) error {
 	srcFile, err := os.Open(src)
 	if err != nil {
 		return errors.Wrap(err, "open src file failed")
@@ -138,7 +138,7 @@ func copyFile(src string, dst string, fileMtime int64) error {
 		return errors.Wrap(err, "stat dst file failed")
 	}
 
-	if srcStat.ModTime() != dstStat.ModTime() || fileMtime != dstStat.ModTime().UnixMilli() {
+	if srcStat.ModTime() != dstStat.ModTime() || fileMtime != dstStat.ModTime().UnixMilli() || overwrite {
 		_, err = io.Copy(dstFile, srcFile)
 		if err != nil {
 			return errors.Wrap(err, "copy file failed")
