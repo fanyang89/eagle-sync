@@ -144,7 +144,7 @@ var cmdExport = &cli.Command{
 
 		lib := eaglesync.NewLibrary(c.String("library"), fs)
 		return lib.Export(dst, eaglesync.ExportOption{
-			Bar:                progressbar.Default(-1),
+			Bar:                progressbar.DefaultBytes(-1, "exporting..."),
 			Overwrite:          c.Bool("overwrite"),
 			Force:              c.Bool("force"),
 			GroupBySmartFolder: c.Bool("group-by-smart-folder"),

@@ -114,16 +114,7 @@ func (e *Library) Export(outputDir string, option ExportOption) error {
 				dst = filepath.Join(outputDir, fileName)
 			}
 
-			err = e.copyFile(src, dst, mtime, &option)
-			if err != nil {
-				return err
-			}
-
-			if bar != nil {
-				bar.Describe(fileName)
-				_ = bar.Add(1)
-			}
-			return nil
+			return e.copyFile(src, dst, mtime, &option)
 		})
 	}
 	return p.Wait()
@@ -155,7 +146,13 @@ func (e *Library) copyFile(src string, dst string, fileMtime int64, option *Expo
 	}
 
 	if srcStat.ModTime() != dstStat.ModTime() || fileMtime != dstStat.ModTime().UnixMilli() || option.Overwrite {
-		_, err = io.Copy(dstFile, srcFile)
+		var writer io.Writer
+		if option.Bar != nil {
+			writer = io.MultiWriter(dstFile, option.Bar)
+		} else {
+			writer = dstFile
+		}
+		_, err = io.Copy(writer, srcFile)
 		if err != nil {
 			return errors.Wrap(err, "copy file failed")
 		}
