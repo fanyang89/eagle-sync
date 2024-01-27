@@ -5,10 +5,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/cockroachdb/errors"
 	"github.com/djherbis/times"
 	"github.com/schollz/progressbar/v3"
+	"github.com/sourcegraph/conc/pool"
 )
 
 type Library struct {
@@ -46,47 +48,55 @@ func (e *Library) Export(outputDir string, bar *progressbar.ProgressBar) error {
 		defer func() { _ = bar.Finish() }()
 	}
 
+	p := pool.New().WithErrors().WithMaxGoroutines(runtime.NumCPU())
 	for fileInfoName, mtime := range mtimeMap {
+		fileInfoName := fileInfoName
+		mtime := mtime
+
 		if fileInfoName == "all" {
 			continue
 		}
 
-		var fileInfo FileInfo
-		fileMetadataPath := filepath.Join(e.BaseDir, "images", fileInfoName+".info", "metadata.json")
-		err = parseJsonFile(fileMetadataPath, &fileInfo)
-		if err != nil {
-			return err
-		}
+		p.Go(func() error {
+			var fileInfo FileInfo
+			fileMetadataPath := filepath.Join(e.BaseDir, "images", fileInfoName+".info", "metadata.json")
+			err = parseJsonFile(fileMetadataPath, &fileInfo)
+			if err != nil {
+				return err
+			}
 
-		if fileInfo.IsDeleted {
-			continue
-		}
+			if fileInfo.IsDeleted {
+				return nil
+			}
 
-		var category string
-		category, err = filter.Evaluate(&fileInfo)
-		if err != nil {
-			return err
-		}
+			var category string
+			category, err = filter.Evaluate(&fileInfo)
+			if err != nil {
+				return err
+			}
 
-		infoDir := filepath.Join(e.BaseDir, "images", fileInfoName+".info")
-		fileName := fileInfo.Name + "." + fileInfo.Ext
-		src := filepath.Join(infoDir, fileName)
-		var dst string
-		if category == "" {
-			dst = filepath.Join(outputDir, "uncategorized", fileName)
-		} else {
-			dst = filepath.Join(outputDir, category, fileName)
-		}
-		err = copyFile(src, dst, mtime)
-		if err != nil {
-			return err
-		}
+			infoDir := filepath.Join(e.BaseDir, "images", fileInfoName+".info")
+			fileName := fileInfo.Name + "." + fileInfo.Ext
+			src := filepath.Join(infoDir, fileName)
+			var dst string
+			if category == "" {
+				dst = filepath.Join(outputDir, "uncategorized", fileName)
+			} else {
+				dst = filepath.Join(outputDir, category, fileName)
+			}
 
-		if bar != nil {
-			_ = bar.Add(1)
-		}
+			err = copyFile(src, dst, mtime)
+			if err != nil {
+				return err
+			}
+
+			if bar != nil {
+				_ = bar.Add(1)
+			}
+			return nil
+		})
 	}
-	return nil
+	return p.Wait()
 }
 
 func parseJsonFile(path string, out interface{}) error {
