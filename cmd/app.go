@@ -1,7 +1,13 @@
 package cmd
 
 import (
+	"os"
+
+	"github.com/cockroachdb/errors"
+	"github.com/schollz/progressbar/v3"
 	"github.com/urfave/cli/v2"
+
+	"github.com/fanyang89/eagle-sync/eaglesync"
 )
 
 func NewApp() *cli.App {
@@ -9,7 +15,7 @@ func NewApp() *cli.App {
 		Name:  "eagle-sync",
 		Usage: "Export/sync your eagle library to NAS",
 		Commands: []*cli.Command{
-			cmdExport, cmdSync,
+			cmdSync, cmdExport,
 		},
 	}
 }
@@ -17,7 +23,14 @@ func NewApp() *cli.App {
 var flagLibraryDir = &cli.StringFlag{
 	Name:    "library",
 	Aliases: []string{"d"},
-	Action: func(context *cli.Context, s string) error {
+	Action: func(c *cli.Context, s string) error {
+		_, err := os.Stat(s)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return errors.Wrap(err, "library not exists")
+			}
+			return errors.Wrap(err, "unexpected error")
+		}
 		return nil
 	},
 }
@@ -25,23 +38,41 @@ var flagLibraryDir = &cli.StringFlag{
 var flagDestDir = &cli.StringFlag{
 	Name:    "dst",
 	Aliases: []string{"o"},
-	Action: func(context *cli.Context, s string) error {
+	Action: func(c *cli.Context, s string) error {
+		if s == "" {
+			return errors.New("dst is empty")
+		}
+
+		_, err := os.Stat(s)
+		if err != nil {
+			if os.IsNotExist(err) {
+				return os.MkdirAll(s, 0755)
+			}
+		}
+		return nil
+	},
+}
+
+var flagBySmartFolder = &cli.BoolFlag{
+	Name:    "by-smart-folder",
+	Aliases: []string{"s"},
+}
+
+var cmdSync = &cli.Command{
+	Name:  "sync",
+	Flags: []cli.Flag{flagLibraryDir, flagDestDir},
+	Action: func(c *cli.Context) error {
 		return nil
 	},
 }
 
 var cmdExport = &cli.Command{
-	Name:  "sync",
-	Flags: []cli.Flag{flagLibraryDir},
-	Action: func(context *cli.Context) error {
-		return nil
-	},
-}
-
-var cmdSync = &cli.Command{
 	Name:  "export",
-	Flags: []cli.Flag{flagLibraryDir},
-	Action: func(context *cli.Context) error {
-		return nil
+	Flags: []cli.Flag{flagLibraryDir, flagDestDir, flagBySmartFolder},
+	Action: func(c *cli.Context) error {
+		lib := &eaglesync.EagleLibrary{
+			BaseDir: c.String("library"),
+		}
+		return lib.Export(c.String("dst"), progressbar.Default(100))
 	},
 }
