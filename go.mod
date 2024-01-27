@@ -1,4 +1,4 @@
-module github.com/fanyang89/eagle-sync
+module github.com/fanyang89/eaglexport
 
 go 1.21.5
 

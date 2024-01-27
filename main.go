@@ -8,7 +8,7 @@ import (
 
 	zerologging "github.com/fanyang89/zerologging/v1"
 
-	"github.com/fanyang89/eagle-sync/cmd"
+	"github.com/fanyang89/eaglexport/cmd"
 )
 
 func main() {

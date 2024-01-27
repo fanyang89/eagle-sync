@@ -11,13 +11,13 @@ import (
 	"github.com/spf13/afero"
 	"github.com/urfave/cli/v2"
 
-	"github.com/fanyang89/eagle-sync/eaglesync"
+	"github.com/fanyang89/eaglexport/eaglexport"
 )
 
 func NewApp() *cli.App {
 	return &cli.App{
-		Name:  "eagle-sync",
-		Usage: "Export/sync your eagle library to NAS",
+		Name:  "eagle-export",
+		Usage: "Export your eagle library to NAS",
 		Commands: []*cli.Command{
 			cmdExport,
 		},
@@ -124,7 +124,7 @@ var cmdExport = &cli.Command{
 			if !ok {
 				return errors.New("invalid smb connection string")
 			}
-			fs, err = eaglesync.NewSmbFs(address, share, eaglesync.SmbFsOption{
+			fs, err = eaglexport.NewSmbFs(address, share, eaglexport.SmbFsOption{
 				User:     c.String("smb-user"),
 				Password: c.String("smb-password"),
 			})
@@ -132,7 +132,7 @@ var cmdExport = &cli.Command{
 				return errors.Wrap(err, "create smbfs failed")
 			}
 			defer func() {
-				err := fs.(*eaglesync.SmbFs).Close()
+				err := fs.(*eaglexport.SmbFs).Close()
 				if err != nil {
 					log.Error().Err(err).Msg("close smbfs failed")
 				}
@@ -142,8 +142,8 @@ var cmdExport = &cli.Command{
 			fs = afero.NewOsFs()
 		}
 
-		lib := eaglesync.NewLibrary(c.String("library"), fs)
-		return lib.Export(dst, eaglesync.ExportOption{
+		lib := eaglexport.NewLibrary(c.String("library"), fs)
+		return lib.Export(dst, eaglexport.ExportOption{
 			Bar:                progressbar.DefaultBytes(-1, "exporting..."),
 			Overwrite:          c.Bool("overwrite"),
 			Force:              c.Bool("force"),

@@ -1,4 +1,4 @@
-package eaglesync
+package eaglexport
 
 type Mtime = map[string]int64
 

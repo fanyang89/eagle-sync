@@ -1,4 +1,4 @@
-package eaglesync
+package eaglexport
 
 import (
 	"net"
