@@ -11,18 +11,24 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
-type EagleLibrary struct {
+type Library struct {
 	BaseDir string
 }
 
-func (e *EagleLibrary) Export(outputDir string, bar *progressbar.ProgressBar) error {
-	var mtimeMap EagleMtime
+func NewLibrary(baseDir string) *Library {
+	return &Library{
+		BaseDir: baseDir,
+	}
+}
+
+func (e *Library) Export(outputDir string, bar *progressbar.ProgressBar) error {
+	var mtimeMap Mtime
 	err := parseJsonFile(filepath.Join(e.BaseDir, "mtime.json"), &mtimeMap)
 	if err != nil {
 		return err
 	}
 
-	var libraryMetadata EagleLibraryInfo
+	var libraryMetadata LibraryInfo
 	err = parseJsonFile(filepath.Join(e.BaseDir, "metadata.json"), &libraryMetadata)
 	if err != nil {
 		return err
@@ -45,7 +51,7 @@ func (e *EagleLibrary) Export(outputDir string, bar *progressbar.ProgressBar) er
 			continue
 		}
 
-		var fileInfo EagleFileInfo
+		var fileInfo FileInfo
 		fileMetadataPath := filepath.Join(e.BaseDir, "images", fileInfoName+".info", "metadata.json")
 		err = parseJsonFile(fileMetadataPath, &fileInfo)
 		if err != nil {

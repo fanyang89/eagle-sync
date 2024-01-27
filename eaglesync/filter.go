@@ -6,7 +6,7 @@ import (
 	"github.com/cockroachdb/errors"
 )
 
-func (r *EagleSmartFolderRule) Eval(fileInfo *EagleFileInfo) bool {
+func (r *SmartFolderRule) Eval(fileInfo *FileInfo) bool {
 	var property string
 	if r.Property == "name" {
 		// fast path for property name
@@ -26,7 +26,7 @@ func (r *EagleSmartFolderRule) Eval(fileInfo *EagleFileInfo) bool {
 	return false
 }
 
-func (c *EagleSmartFolderCondition) Eval(fileInfo *EagleFileInfo) bool {
+func (c *SmartFolderCondition) Eval(fileInfo *FileInfo) bool {
 	if len(c.Rules) <= 0 {
 		panic(errors.New("Smart folder rules is empty"))
 	}
@@ -54,16 +54,16 @@ func (c *EagleSmartFolderCondition) Eval(fileInfo *EagleFileInfo) bool {
 }
 
 type FileDispatcher struct {
-	libraryInfo *EagleLibraryInfo
+	libraryInfo *LibraryInfo
 }
 
-func NewFolderFilter(meta *EagleLibraryInfo) FileDispatcher {
+func NewFolderFilter(meta *LibraryInfo) FileDispatcher {
 	return FileDispatcher{
 		libraryInfo: meta,
 	}
 }
 
-func (f FileDispatcher) Evaluate(fileInfo *EagleFileInfo) (string, error) {
+func (f FileDispatcher) Evaluate(fileInfo *FileInfo) (string, error) {
 	for _, folder := range f.libraryInfo.SmartFolders {
 		for _, cond := range folder.Conditions {
 			if cond.Eval(fileInfo) {

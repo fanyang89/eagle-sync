@@ -70,9 +70,7 @@ var cmdExport = &cli.Command{
 	Name:  "export",
 	Flags: []cli.Flag{flagLibraryDir, flagDestDir, flagBySmartFolder},
 	Action: func(c *cli.Context) error {
-		lib := &eaglesync.EagleLibrary{
-			BaseDir: c.String("library"),
-		}
+		lib := eaglesync.NewLibrary(c.String("library"))
 		return lib.Export(c.String("dst"), progressbar.Default(100))
 	},
 }
