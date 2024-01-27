@@ -10,15 +10,18 @@ import (
 	"github.com/djherbis/times"
 	"github.com/schollz/progressbar/v3"
 	"github.com/sourcegraph/conc/pool"
+	"github.com/spf13/afero"
 )
 
 type Library struct {
 	BaseDir string
+	fs      afero.Fs
 }
 
-func NewLibrary(baseDir string) *Library {
+func NewLibrary(baseDir string, fs afero.Fs) *Library {
 	return &Library{
 		BaseDir: baseDir,
+		fs:      fs,
 	}
 }
 
@@ -38,7 +41,7 @@ type ExportOption struct {
 
 func (e *Library) Export(outputDir string, option ExportOption) error {
 	if option.Force {
-		err := os.RemoveAll(outputDir)
+		err := e.fs.RemoveAll(outputDir)
 		if err != nil {
 			return errors.Wrapf(err, "delete directory '%v' failed", outputDir)
 		}
@@ -111,12 +114,13 @@ func (e *Library) Export(outputDir string, option ExportOption) error {
 				dst = filepath.Join(outputDir, fileName)
 			}
 
-			err = copyFile(src, dst, mtime, &option)
+			err = e.copyFile(src, dst, mtime, &option)
 			if err != nil {
 				return err
 			}
 
 			if bar != nil {
+				bar.Describe(fileName)
 				_ = bar.Add(1)
 			}
 			return nil
@@ -125,7 +129,8 @@ func (e *Library) Export(outputDir string, option ExportOption) error {
 	return p.Wait()
 }
 
-func copyFile(src string, dst string, fileMtime int64, option *ExportOption) error {
+func (e *Library) copyFile(src string, dst string, fileMtime int64, option *ExportOption) error {
+	// TODO: src file is always in the OS fs or not?
 	srcFile, err := os.Open(src)
 	if err != nil {
 		return errors.Wrap(err, "open src file failed")
@@ -137,8 +142,8 @@ func copyFile(src string, dst string, fileMtime int64, option *ExportOption) err
 		return errors.Wrap(err, "stat src file failed")
 	}
 
-	_ = os.MkdirAll(filepath.Dir(dst), 0755)
-	dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+	_ = e.fs.MkdirAll(filepath.Dir(dst), 0755)
+	dstFile, err := e.fs.OpenFile(dst, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0655)
 	if err != nil {
 		return errors.Wrap(err, "open dst file failed")
 	}
@@ -154,7 +159,7 @@ func copyFile(src string, dst string, fileMtime int64, option *ExportOption) err
 		if err != nil {
 			return errors.Wrap(err, "copy file failed")
 		}
-		err = os.Chtimes(dst, srcStat.AccessTime(), srcStat.ModTime())
+		err = e.fs.Chtimes(dst, srcStat.AccessTime(), srcStat.ModTime())
 		if err != nil {
 			return errors.Wrapf(err, "chtimes failed, path: %v", dst)
 		}
