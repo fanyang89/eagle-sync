@@ -53,13 +53,18 @@ var flagDestDir = &cli.StringFlag{
 	},
 }
 
-var flagBySmartFolder = &cli.BoolFlag{
-	Name:    "by-smart-folder",
+var flagGroupBySmartFolder = &cli.BoolFlag{
+	Name:    "group-by-smart-folder",
 	Aliases: []string{"s"},
+	Value:   true,
 }
 
 var flagOverwrite = &cli.BoolFlag{
 	Name: "overwrite",
+}
+
+var flagForce = &cli.BoolFlag{
+	Name: "force",
 }
 
 var cmdSync = &cli.Command{
@@ -72,10 +77,14 @@ var cmdSync = &cli.Command{
 
 var cmdExport = &cli.Command{
 	Name:  "export",
-	Flags: []cli.Flag{flagLibraryDir, flagDestDir, flagBySmartFolder, flagOverwrite},
+	Flags: []cli.Flag{flagLibraryDir, flagDestDir, flagGroupBySmartFolder, flagOverwrite, flagForce},
 	Action: func(c *cli.Context) error {
 		lib := eaglesync.NewLibrary(c.String("library"))
-		overwrite := c.Bool("overwrite")
-		return lib.Export(c.String("dst"), overwrite, progressbar.Default(-1))
+		return lib.Export(c.String("dst"), eaglesync.ExportOption{
+			Bar:                progressbar.Default(-1),
+			Overwrite:          c.Bool("overwrite"),
+			Force:              c.Bool("force"),
+			GroupBySmartFolder: c.Bool("group-by-smart-folder"),
+		})
 	},
 }

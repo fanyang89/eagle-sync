@@ -1,7 +1,6 @@
 package eaglesync
 
 import (
-	"encoding/json"
 	"io"
 	"os"
 	"path/filepath"
@@ -23,7 +22,28 @@ func NewLibrary(baseDir string) *Library {
 	}
 }
 
-func (e *Library) Export(outputDir string, overwrite bool, bar *progressbar.ProgressBar) error {
+type ExportOption struct {
+	// Overwrite the existing file
+	Overwrite bool
+
+	// Force clean up the destination directory before export
+	Force bool
+
+	// Bar cli progress bar
+	Bar *progressbar.ProgressBar
+
+	// GroupBySmartFolder export group by smart folder
+	GroupBySmartFolder bool
+}
+
+func (e *Library) Export(outputDir string, option ExportOption) error {
+	if option.Force {
+		err := os.RemoveAll(outputDir)
+		if err != nil {
+			return errors.Wrapf(err, "delete directory '%v' failed", outputDir)
+		}
+	}
+
 	var mtimeMap Mtime
 	err := parseJsonFile(filepath.Join(e.BaseDir, "mtime.json"), &mtimeMap)
 	if err != nil {
@@ -43,6 +63,7 @@ func (e *Library) Export(outputDir string, overwrite bool, bar *progressbar.Prog
 		return errors.New("field 'all' not exists")
 	}
 
+	bar := option.Bar
 	if bar != nil {
 		bar.ChangeMax64(count)
 		defer func() { _ = bar.Finish() }()
@@ -69,23 +90,28 @@ func (e *Library) Export(outputDir string, overwrite bool, bar *progressbar.Prog
 				return nil
 			}
 
-			var category string
-			category, err = filter.Evaluate(&fileInfo)
-			if err != nil {
-				return err
-			}
-
 			infoDir := filepath.Join(e.BaseDir, "images", fileInfoName+".info")
 			fileName := fileInfo.Name + "." + fileInfo.Ext
 			src := filepath.Join(infoDir, fileName)
+
 			var dst string
-			if category == "" {
-				dst = filepath.Join(outputDir, "uncategorized", fileName)
+			if option.GroupBySmartFolder {
+				var category string
+				category, err = filter.Evaluate(&fileInfo)
+				if err != nil {
+					return err
+				}
+
+				if category == "" {
+					dst = filepath.Join(outputDir, "uncategorized", fileName)
+				} else {
+					dst = filepath.Join(outputDir, category, fileName)
+				}
 			} else {
-				dst = filepath.Join(outputDir, category, fileName)
+				dst = filepath.Join(outputDir, fileName)
 			}
 
-			err = copyFile(src, dst, mtime, overwrite)
+			err = copyFile(src, dst, mtime, &option)
 			if err != nil {
 				return err
 			}
@@ -99,22 +125,7 @@ func (e *Library) Export(outputDir string, overwrite bool, bar *progressbar.Prog
 	return p.Wait()
 }
 
-func parseJsonFile(path string, out interface{}) error {
-	fh, err := os.Open(path)
-	if err != nil {
-		return errors.Wrapf(err, "open file failed, path: %v", path)
-	}
-	defer func() { _ = fh.Close() }()
-
-	dec := json.NewDecoder(fh)
-	err = dec.Decode(out)
-	if err != nil {
-		return errors.Wrap(err, "decode failed")
-	}
-	return nil
-}
-
-func copyFile(src string, dst string, fileMtime int64, overwrite bool) error {
+func copyFile(src string, dst string, fileMtime int64, option *ExportOption) error {
 	srcFile, err := os.Open(src)
 	if err != nil {
 		return errors.Wrap(err, "open src file failed")
@@ -138,7 +149,7 @@ func copyFile(src string, dst string, fileMtime int64, overwrite bool) error {
 		return errors.Wrap(err, "stat dst file failed")
 	}
 
-	if srcStat.ModTime() != dstStat.ModTime() || fileMtime != dstStat.ModTime().UnixMilli() || overwrite {
+	if srcStat.ModTime() != dstStat.ModTime() || fileMtime != dstStat.ModTime().UnixMilli() || option.Overwrite {
 		_, err = io.Copy(dstFile, srcFile)
 		if err != nil {
 			return errors.Wrap(err, "copy file failed")
