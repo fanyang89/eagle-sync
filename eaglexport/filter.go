@@ -11,16 +11,24 @@ func (r *SmartFolderRule) Eval(fileInfo *FileInfo) bool {
 	if r.Property == "name" {
 		// fast path for property name
 		property = fileInfo.Name
+	} else if r.Property == "type" {
+		property = fileInfo.Ext
 	} else {
 		// slow path, use reflection
-		panic(errors.New("not supported"))
+		panic(errors.Newf("not supported, property: %v", r.Property))
 	}
 
 	switch r.Method {
 	case "contain":
 		return strings.Contains(property, r.Value)
+	case "uncontain":
+		return !strings.Contains(property, r.Value)
+	case "equal":
+		return property == r.Value
+	case "unequal":
+		return property != r.Value
 	default:
-		panic(errors.New("not supported method"))
+		panic(errors.Newf("not supported method: %v", r.Method))
 	}
 
 	return false
