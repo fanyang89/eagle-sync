@@ -11,6 +11,7 @@ import (
 	"github.com/schollz/progressbar/v3"
 	"github.com/sourcegraph/conc/pool"
 	"github.com/spf13/afero"
+	"github.com/vbauerster/mpb/v8"
 )
 
 type Library struct {
@@ -37,6 +38,10 @@ type ExportOption struct {
 
 	// GroupBySmartFolder export group by smart folder
 	GroupBySmartFolder bool
+
+	SpeedBar *mpb.Bar
+	ItemBar  *mpb.Bar
+}
 }
 
 func (e *Library) Export(outputDir string, option ExportOption) error {
@@ -66,10 +71,9 @@ func (e *Library) Export(outputDir string, option ExportOption) error {
 		return errors.New("field 'all' not exists")
 	}
 
-	bar := option.Bar
-	if bar != nil {
-		bar.ChangeMax64(count)
-		defer func() { _ = bar.Finish() }()
+	if option.ItemBar != nil {
+		option.ItemBar.SetTotal(count, false)
+		defer func() { option.ItemBar.SetCurrent(count) }()
 	}
 
 	p := pool.New().WithErrors().WithMaxGoroutines(runtime.NumCPU())
@@ -133,6 +137,10 @@ func (e *Library) copyFile(src string, dst string, fileMtime int64, option *Expo
 		return errors.Wrap(err, "stat src file failed")
 	}
 
+	srcStat2, err := srcFile.Stat()
+	if err != nil {
+		return errors.Wrap(err, "stat2 src file failed")
+	}
 	_ = e.fs.MkdirAll(filepath.Dir(dst), 0755)
 	dstFile, err := e.fs.OpenFile(dst, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0655)
 	if err != nil {
@@ -159,9 +167,19 @@ func (e *Library) copyFile(src string, dst string, fileMtime int64, option *Expo
 		err = e.fs.Chtimes(dst, srcStat.AccessTime(), srcStat.ModTime())
 		if err != nil {
 			return errors.Wrapf(err, "chtimes failed, path: %v", dst)
+			if option.SpeedBar != nil {
+				option.SpeedBar.IncrInt64(n)
+			}
 		}
 	} else {
-		return errors.Wrap(err, "stat dst file failed")
+		//log.Info().Str("file", src).Msg("skip copy")
+		if option.SpeedBar != nil {
+			option.SpeedBar.IncrInt64(srcStat2.Size())
+		}
+	}
+
+	if option.ItemBar != nil {
+		option.ItemBar.IncrBy(1)
 	}
 
 	return nil
