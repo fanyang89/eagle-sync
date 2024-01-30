@@ -6,7 +6,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	zerologging "github.com/fanyang89/zerologging/v1"
+	"github.com/fanyang89/zerologging/v1"
 
 	"github.com/fanyang89/eaglexport/cmd"
 )

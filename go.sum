@@ -13,8 +13,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/djherbis/times v1.6.0 h1:w2ctJ92J8fBvWPxugmXIv7Nz7Q3iDMKNx9v5ocVH20c=
 github.com/djherbis/times v1.6.0/go.mod h1:gOHeRAz2h+VJNZ5Gmc/o7iD9k4wW7NMVqieYCY99oc0=
-github.com/fanyang89/zerologging v0.0.0-20240127053657-e82e0f75fed4 h1:ESSAqFuwCZxFWwLeELnY5Xbewil2Qjc9faYiIUz35xU=
-github.com/fanyang89/zerologging v0.0.0-20240127053657-e82e0f75fed4/go.mod h1:NT7vxHWUwd8viEg2gSU/01Hy1EgsPQ3T0yQWWVXOXK8=
+github.com/fanyang89/zerologging v0.0.0-20240127054027-30655c6012e5 h1:j8dQ2rzO1yJnPo0KmqgBrL8vmntTc9S0lw6+QCEm1hI=
+github.com/fanyang89/zerologging v0.0.0-20240127054027-30655c6012e5/go.mod h1:NT7vxHWUwd8viEg2gSU/01Hy1EgsPQ3T0yQWWVXOXK8=
 github.com/geoffgarside/ber v1.1.0 h1:qTmFG4jJbwiSzSXoNJeHcOprVzZ8Ulde2Rrrifu5U9w=
 github.com/geoffgarside/ber v1.1.0/go.mod h1:jVPKeCbj6MvQZhwLYsGwaGI52oUorHoHKNecGT85ZCc=
 github.com/getsentry/sentry-go v0.18.0 h1:MtBW5H9QgdcJabtZcuJG80BMOwaBpkRDZkxRkNC1sN0=

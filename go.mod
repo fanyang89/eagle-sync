@@ -5,7 +5,7 @@ go 1.21.5
 require (
 	github.com/cockroachdb/errors v1.11.1
 	github.com/djherbis/times v1.6.0
-	github.com/fanyang89/zerologging v0.0.0-20240127053657-e82e0f75fed4
+	github.com/fanyang89/zerologging v0.0.0-20240127054027-30655c6012e5
 	github.com/goccy/go-json v0.9.11
 	github.com/hirochachacha/go-smb2 v1.1.0
 	github.com/rs/zerolog v1.31.0
