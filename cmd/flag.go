@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/cockroachdb/errors"
 	"github.com/urfave/cli/v2"
@@ -69,6 +70,18 @@ var flagSmbPassword = &cli.StringFlag{
 	Action: func(context *cli.Context, s string) error {
 		if s == "" {
 			return errors.New("empty smb password")
+		}
+		return nil
+	},
+}
+
+var flagHistoryFile = &cli.StringFlag{
+	Name:  "history-file",
+	Value: "",
+	Action: func(context *cli.Context, s string) error {
+		if s != "" {
+			dir := filepath.Dir(s)
+			return os.MkdirAll(dir, 0755)
 		}
 		return nil
 	},
